@@ -1,37 +1,29 @@
 // Configurações do Motor DC
-
-// Pino PWM conectado ao motor (GPIO26)
-#define MOTOR_PWM_PIN 26
+#define MOTOR_PWM_PIN 26 // Pino PWM conectado ao motor (GPIO26)
 #define MOTOR_PWM_CHANNEL 0
 #define MOTOR_PWM_FREQ 5000
-// Resolução do PWM (8 bits = 0-255)
-#define MOTOR_PWM_RESOLUTION 8
+#define MOTOR_PWM_RESOLUTION 8 // Resolução do PWM (8 bits = 0-255)
 
 // Configurações do Encoder
-// Pino conectado ao leitor óptico (GPIO14)
-#define ENCODER_PIN 14
-// Pulsos por rotação do motor (ajustar conforme o encoder).
-// O PPR (Pulses Per Revolution) representa a quantidade de pulsos 
-// que um sensor (como um encoder óptico) gera para cada rotação completa de um eixo ou motor.
-#define PPR 2      
+#define ENCODER_PIN 14 // Pino conectado ao leitor óptico (GPIO14)
+#define PPR 2          // Pulsos por rotação do motor (ajustar conforme o encoder)
 
 // Variáveis para controle do motor
-int pwmValue = 80; 
+int pwmValue = 80; // Valor inicial do PWM (50%)
 
 // Variáveis para leitura de pulsos e cálculo de RPM
-// Contagem de pulsos
-volatile unsigned long pulseCount = 0;  
-// Tempo anterior
-unsigned long previousMillis = 0;       
-// Intervalo de 1 segundo para cálculo do RPM
-const unsigned long interval = 1000;    
+volatile unsigned long pulseCount = 0; // Contagem de pulsos
+unsigned long previousMillis = 0;      // Tempo anterior
+const unsigned long interval = 1000;   // Intervalo de 1 segundo para cálculo do RPM
 
 // Função chamada em cada pulso do encoder
-void IRAM_ATTR pulseCounter() {
+void IRAM_ATTR pulseCounter()
+{
   pulseCount++;
 }
 
-void setup() {
+void setup()
+{
   // Inicializa comunicação serial
   Serial.begin(115200);
 
@@ -42,18 +34,37 @@ void setup() {
 
   // Configuração do pino do encoder como entrada
   pinMode(ENCODER_PIN, INPUT_PULLUP);
-  
+
   // Configurar interrupção no pino do encoder
   attachInterrupt(digitalPinToInterrupt(ENCODER_PIN), pulseCounter, RISING);
 
   Serial.println("Sistema iniciado!");
+
+  ledcWrite(MOTOR_PWM_CHANNEL, pwmValue);
 }
 
-void loop() {
+void loop()
+{
   unsigned long currentMillis = millis();
 
+  if (Serial.available() > 0)
+  {
+    String receivedData = Serial.readString();
+    pwmValue = receivedData.toInt();
+
+    if (pwmValue < 0 || pwmValue >= 256)
+    {
+      Serial.println("Valor da frequência PWM inválido, setando valor padrão de 80");
+      pwmValue = 80;
+    }
+
+    ledcWrite(MOTOR_PWM_CHANNEL, pwmValue);
+    Serial.printf("Novo valor para o PWM setado com sucesso %d\n", pwmValue);
+  }
+
   // Calcular RPM a cada intervalo de 1 segundo
-  if (currentMillis - previousMillis >= interval) {
+  if (currentMillis - previousMillis >= interval)
+  {
     previousMillis = currentMillis;
 
     // Cálculo do RPM
@@ -71,9 +82,10 @@ void loop() {
     pulseCount = 0;
 
     // Atualizar o valor do PWM (opcional: para testes)
+
     // Incrementa PWM para observar a mudança no RPM
-    pwmValue = (pwmValue + 10) % 256; 
+    // pwmValue = (pwmValue + 10) % 256;
     // Aplica o novo valor de PWM
-    ledcWrite(MOTOR_PWM_CHANNEL, pwmValue);
+    // ledcWrite(MOTOR_PWM_CHANNEL, pwmValue);
   }
 }
