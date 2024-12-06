@@ -6,10 +6,11 @@
 
 // Configurações do Encoder
 #define ENCODER_PIN 14 // Pino conectado ao leitor óptico (GPIO14)
-#define PPR 2          // Pulsos por rotação do motor (ajustar conforme o encoder)
+#define PPR 2          // Pulsos por rotação do motor (ajustar conforme o encoder)1/#inbox
 
 // Variáveis para controle do motor
 int pwmValue = 80; // Valor inicial do PWM (50%)
+int rpmValue = 0;
 
 // Variáveis para leitura de pulsos e cálculo de RPM
 volatile unsigned long pulseCount = 0; // Contagem de pulsos
@@ -50,8 +51,13 @@ void loop()
   if (Serial.available() > 0)
   {
     String receivedData = Serial.readString();
-    pwmValue = receivedData.toInt();
+    rpmValue = receivedData.toInt();
+    if(rpmValue < 0) {
+      Serial.println("Valor de RPM inválido, setando valor padrão para 0");
+      rpmValue = 0;
+    }
 
+    pwmValue = (1.2 * rpmValue + 160) / 2.0;
     if (pwmValue < 0 || pwmValue >= 256)
     {
       Serial.println("Valor da frequência PWM inválido, setando valor padrão de 80");
