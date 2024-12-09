@@ -4,7 +4,7 @@ import numpy as np
 from serial import Serial, SerialException
 
 
-def atualizeData(ser: float, y_val: list[float]):
+def updateData(ser: float, y_val: list[float]):
     if ser.in_waiting > 0:
         print("Valor sendo lido")
         line = ser.readline().decode("utf-8").rstrip()
@@ -17,7 +17,7 @@ def atualizeData(ser: float, y_val: list[float]):
 
 
 def animate(i: int, ser, y_val):
-    x_val, y_val = atualizeData(ser, y_val)
+    x_val, y_val = updateData(ser, y_val)
 
     plt.cla()
     plt.title("Valores de RPM")
@@ -29,7 +29,7 @@ def animate(i: int, ser, y_val):
 
 def handlePlot(port: str):
     print(f"Lendo a porta {port}")
-
+    
     if port == "":
         print("Porta não selecionada")
         return {"error": "Porta não selecionada"}
@@ -41,11 +41,11 @@ def handlePlot(port: str):
         y_val = []
         anim = FuncAnimation(
             plt.gcf(),
-            lambda i: animate(ser, y_val),
+            lambda i: animate(i, ser, y_val),
             interval=50,
             cache_frame_data=False,
         )
-
+        
         plt.show()
         return None
 
