@@ -1,21 +1,21 @@
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
-import random as rand
-# import serial
+import serial
 
-# ser = serial.Serial()
-# ser.port = 'COM11'
-# ser.baudrate = 115200
-# ser.setDTR(False)
-# ser.setRTS(False)
+ser = serial.Serial()
+ser.port = 'COM11'
+ser.baudrate = 115200
+ser.setDTR(False)
+ser.setRTS(False)
 
-# ser.open()
+ser.open()
 
 y_val = []
 
 def read_data():
-    y_val.append(rand.randrange(75, 85))
+    val = ser.readline()
+    y_val.append(int(val))
     x_val = np.arange(0, len(y_val))
         
     return x_val, y_val
@@ -30,10 +30,6 @@ def animate(i):
     plt.tight_layout()
     plt.plot(x_val, y_val)
 
-anim = FuncAnimation(plt.gcf(), animate, interval=1000, cache_frame_data=False)
+anim = FuncAnimation(plt.gcf(), animate, interval=500, cache_frame_data=False)
 
 plt.show()
-
-# while True:
-#     b = ser.readline()
-#     print(b)
