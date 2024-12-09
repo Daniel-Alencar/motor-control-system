@@ -9,29 +9,41 @@
 // Configurações do Encoder
 // Pino conectado ao leitor óptico (GPIO14)
 #define ENCODER_PIN 14 
-// Pulsos por rotação do motor (ajustar conforme o encoder)
+// Pulsos por rotação do motor
 #define PPR 2          
 
 // Variáveis para controle do motor
-int pwmValue = 80;
-int rpmValue = 0;
+int pwmValue = 0;
+float rpmValue = 0;
 
 // Variáveis para leitura de pulsos e cálculo de RPM
 // Contagem de pulsos
 volatile unsigned long pulseCount = 0; 
 // Tempo anterior
-unsigned long previousMillis = 0;      
-// Intervalo de 1 segundo para cálculo do RPM
-const unsigned long interval = 1000; 
+unsigned long previousMillis = 0;   
+unsigned long previousMillisRPM = 0;      
+// Intervalo de segundos para cálculo do RPM
+const unsigned long interval = 50; 
 
 // Constantes do PID
-float Kp = 1.0;  // Ganho proporcional
-float Ki = 0.5;  // Ganho integral
-float Kd = 0.2;  // Ganho derivativo
+float Kp = 0.02;   // Ganho proporcional
+float Ki = 0.01;  // Ganho integral
+float Kd = 0.1;   // Ganho derivativo
+
+// Limites para o termo integral
+float integralMax = 100;
+float integralMin = -100;
 
 // Variáveis do PID
 float integral = 0;
 float previousError = 0;
+
+// Limite do ajuste do PWM
+// Limite máximo para mudanças no PWM por iteração
+float pwmMaxAdjustment = 50;
+
+float intervalRpmMeasure = 1000;
+float rpmMeasured = 0;
 
 
 // Função chamada em cada pulso do encoder
@@ -80,13 +92,16 @@ void loop()
     }
   }
 
-  // Calcular RPM real a cada intervalo
+  // Calcular os ajustes do sistema de controle
   if (currentMillis - previousMillis >= interval)
   {
+    unsigned long currentMillisRPM = millis();
+
     previousMillis = currentMillis;
 
     // Cálculo do RPM real
-    unsigned long rpmMeasured = (pulseCount * 60) / PPR;
+    // Serial.println("Quantidade de pulsos: " + String(pulseCount));
+    rpmMeasured = (pulseCount * 60 * (1000.0 / interval)) / PPR;
 
     // Calcular o erro
     float error = rpmValue - rpmMeasured;
@@ -94,18 +109,32 @@ void loop()
     // Componente proporcional
     float proportional = Kp * error;
 
-    // Componente integral
-    integral += error * (interval / 1000.0);
+    // Componente integral (acumulado, com limites)
+    // Tempo em segundos
+    integral += error/60 * (interval / 1000.0); 
+    if (integral > integralMax)
+      integral = integralMax;
+    if (integral < integralMin)
+      integral = integralMin;
+
     float integralTerm = Ki * integral;
 
     // Componente derivativo
-    float derivative = (error - previousError) / (interval / 1000.0);
+    float derivative = (error/60 - previousError/60) / (interval / 1000.0);
     float derivativeTerm = Kd * derivative;
+    
+    // Exibir informações no monitor serial
+    // Serial.print("Proporcional: ");
+    // Serial.print(proportional);
+    // Serial.print(" | Integral: ");
+    // Serial.print(integralTerm);
+    // Serial.print(" | Derivativo: ");
+    // Serial.println(derivativeTerm);
 
-    // Calcular o valor do PWM
-    float pwmAdjustment = proportional + integralTerm + derivativeTerm;
+    // Calcular ajuste de PWM
+    float pwmAdjustment = proportional;
 
-    // Atualizar o PWM
+    // Atualizar o PWM (com saturação)
     pwmValue += pwmAdjustment;
     if (pwmValue < 0)
       pwmValue = 0;
@@ -115,14 +144,17 @@ void loop()
     ledcWrite(MOTOR_PWM_CHANNEL, pwmValue);
 
     // Exibir informações no monitor serial
-    Serial.print("RPM desejado: ");
-    Serial.print(rpmValue);
-    Serial.print(" | RPM medido: ");
-    Serial.print(rpmMeasured);
-    Serial.print(" | Erro: ");
-    Serial.print(error);
-    Serial.print(" | PWM: ");
-    Serial.println(pwmValue);
+    // Serial.print("RPM desejado: ");
+    // Serial.print(rpmValue);
+    // Serial.print(" | RPM medido: ");
+    // Serial.print(rpmMeasured);
+    // Serial.print(" | Erro: ");
+    // Serial.print(error);
+    // Serial.print(" | PWM: ");
+    // Serial.println(pwmValue);
+    // Serial.println("");
+
+    Serial.println(rpmMeasured);
 
     // Atualizar o erro anterior
     previousError = error;
