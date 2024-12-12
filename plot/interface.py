@@ -89,7 +89,7 @@ class MainWindow(QWidget):
         if self.port:
             result = handlePlot(self.port)
 
-        if result is not None:
+        if result is not None and isinstance(result, dict) and "error" in result:
             self.label.setText(formatText(result["error"]))
 
 
