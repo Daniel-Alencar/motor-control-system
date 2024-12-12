@@ -23,10 +23,10 @@ volatile unsigned long pulseCount = 0;
 unsigned long previousMillis = 0;   
 unsigned long previousMillisRPM = 0;      
 // Intervalo de segundos para cálculo do RPM
-const unsigned long interval = 50; 
+const unsigned long interval = 250; 
 
 // Constantes do PID
-float Kp = 0.02;   // Ganho proporcional
+float Kp = 0.02;  // Ganho proporcional
 float Ki = 0.01;  // Ganho integral
 float Kd = 0.1;   // Ganho derivativo
 
@@ -40,7 +40,7 @@ float previousError = 0;
 
 // Limite do ajuste do PWM
 // Limite máximo para mudanças no PWM por iteração
-float pwmMaxAdjustment = 50;
+float pwmMaxAdjustment = 20;
 
 float intervalRpmMeasure = 1000;
 float rpmMeasured = 0;
@@ -132,7 +132,7 @@ void loop()
     // Serial.println(derivativeTerm);
 
     // Calcular ajuste de PWM
-    float pwmAdjustment = proportional;
+    float pwmAdjustment = proportional + integralTerm + derivativeTerm;
 
     // Atualizar o PWM (com saturação)
     pwmValue += pwmAdjustment;
@@ -154,7 +154,9 @@ void loop()
     // Serial.println(pwmValue);
     // Serial.println("");
 
-    Serial.println(rpmMeasured);
+    Serial.println(String(rpmValue) + String(", ") + String(rpmMeasured));
+
+    // Serial.println(rpmMeasured);
 
     // Atualizar o erro anterior
     previousError = error;
