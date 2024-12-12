@@ -40,10 +40,11 @@ float previousError = 0;
 
 // Limite do ajuste do PWM
 // Limite máximo para mudanças no PWM por iteração
-float pwmMaxAdjustment = 20;
+float pwmMaxAdjustment = 5;
 
 float intervalRpmMeasure = 1000;
 float rpmMeasured = 0;
+float previousRPMMeasured = 0;
 
 
 // Função chamada em cada pulso do encoder
@@ -100,7 +101,10 @@ void loop()
     previousMillis = currentMillis;
 
     // Cálculo do RPM real
-    // Serial.println("Quantidade de pulsos: " + String(pulseCount));
+    // previousRPMMeasured = rpmMeasured;
+
+    // float alpha = 0.1; // fator de suavização
+    // rpmMeasured = alpha * rpmMeasured + (1 - alpha) * previousRPMMeasured;
     rpmMeasured = (pulseCount * 60 * (1000.0 / interval)) / PPR;
 
     // Calcular o erro
@@ -133,6 +137,13 @@ void loop()
 
     // Calcular ajuste de PWM
     float pwmAdjustment = proportional + integralTerm + derivativeTerm;
+
+    // if(pwmAdjustment > +pwmMaxAdjustment) {
+    //   pwmAdjustment = +pwmMaxAdjustment;
+    // }
+    // if(pwmAdjustment < -pwmMaxAdjustment) {
+    //   pwmAdjustment = -pwmMaxAdjustment;
+    // }
 
     // Atualizar o PWM (com saturação)
     pwmValue += pwmAdjustment;
